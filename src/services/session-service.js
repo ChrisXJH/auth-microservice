@@ -3,28 +3,43 @@ module.exports = (() => {
   const { Asserts } = require('../utils');
   const SessionModel = require('../models/session-model.js');
 
+  class InvalidArgumentError extends Error {}
+
+  const Errors = { InvalidArgumentError };
+
   function createUserSession(username, password) {
-    Asserts.notNullOrEmpty(username, 'username');
-    Asserts.notNullOrEmpty(password, 'password');
-    return UserService.findUserByUsernameAndPassword(username, password).then(
-      users => {
-        const user = users[0];
-        if (user) {
-          const userId = user._id;
-          SessionModel.deleteMany({ userId }).catch(err => console.error(err));
-          const creationTime = new Date();
-          const sessionModel = new SessionModel({ userId, creationTime });
-          return sessionModel.save();
+    return new Promise((resolve, reject) => {
+      try {
+        Asserts.notNullOrEmpty(username, 'username');
+        Asserts.notNullOrEmpty(password, 'password');
+        resolve(authenticateUserAndCreateSession(username, password));
+      } catch (err) {
+        if (err instanceof Asserts.Errors.AssertionError) {
+          reject(new InvalidArgumentError(err.message));
         }
-        return null;
+        reject(err);
       }
-    );
+    });
   }
 
   function getActiveUserSessionById(_id) {
-    Asserts.notNullOrEmpty(_id, 'sessionId');
-    return SessionModel.find({ _id }).then(sessions => sessions[0]);
+    return new Promise((resolve, reject) => {
+      Asserts.notNullOrEmpty(_id, 'sessionId');
+      SessionModel.find({ _id })
+        .then(sessions => resolve(sessions[0]))
+        .catch(err => reject(err));
+    });
   }
 
-  return { createUserSession, getActiveUserSessionById };
+  function authenticateUserAndCreateSession(username, password) {
+    return UserService.authenticateUser(username, password).then(user => {
+      const userId = user._id;
+      return SessionModel.deleteMany({ userId }).then(() => {
+        const creationTime = new Date();
+        return new SessionModel({ userId, creationTime }).save();
+      });
+    });
+  }
+
+  return { createUserSession, getActiveUserSessionById, Errors };
 })();

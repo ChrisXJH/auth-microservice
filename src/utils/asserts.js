@@ -1,6 +1,7 @@
 module.exports = (() => {
   const assert = require('assert');
   const { AssertionError } = assert;
+
   function notNull(obj, name) {
     assert(obj !== null && obj !== undefined, `${name} should not be null.`);
   }
@@ -14,5 +15,7 @@ module.exports = (() => {
     notEmpty(obj, name);
   }
 
-  return { notNull, notEmpty, notNullOrEmpty, AssertionError };
+  const Errors = { AssertionError };
+
+  return { notNull, notEmpty, notNullOrEmpty, Errors };
 })();

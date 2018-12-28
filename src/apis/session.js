@@ -1,28 +1,17 @@
 module.exports = (() => {
   const express = require('express');
   const mongoose = require('mongoose');
-  const { AssertionError } = require('../utils');
-  const { SessionService } = require('../services');
+  const { SessionService, UserService } = require('../services');
   const router = express.Router();
 
   router.post('/', (req, res) => {
-    try {
-      const { username, password } = req.body;
-      SessionService.createUserSession(username, password).then(newSession => {
-        if (newSession) {
-          const { _id } = newSession;
-          res.send({ _id });
-        }
-        const message =
-          'Could not create session with given username and password.';
-        console.error(message);
-        res.send({
-          message
-        });
-      });
-    } catch (err) {
-      handleErrorAndRespond(err, res);
-    }
+    const { username, password } = req.body;
+    SessionService.createUserSession(username, password)
+      .then(newSession => {
+        const { _id } = newSession;
+        res.send({ _id });
+      })
+      .catch(err => handleErrorAndRespond(err, res));
   });
 
   router.get('/:sessionId', (req, res) => {
@@ -46,7 +35,7 @@ module.exports = (() => {
     let message = err.message;
     console.error(message);
     let status = 500;
-    if (err instanceof AssertionError) {
+    if (err instanceof UserService.Errors.UserNotFoundError) {
       status = 400;
     } else if (err instanceof mongoose.Error.CastError) {
       message = `Invalid sessionId.`;
