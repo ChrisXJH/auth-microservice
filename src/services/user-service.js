@@ -33,14 +33,14 @@ module.exports = (() => {
         Asserts.notNullOrEmpty(username, 'username');
         Asserts.notNullOrEmpty(password, 'password');
 
-        findUserByUsernameAndPassword(username, password).then(users => {
+        findActiveUserByUsernameAndPassword(username, password).then(users => {
           if (users[0]) {
             const { _id } = users[0];
             resolve({ _id, username });
           }
           reject(
             new UserNotFoundError(
-              `Could not find user with given username and password.`
+              `Could not find an active user with given username and password.`
             )
           );
         });
@@ -53,8 +53,9 @@ module.exports = (() => {
     });
   }
 
-  function findUserByUsernameAndPassword(username, password) {
-    return UserModel.find({ username, password });
+  function findActiveUserByUsernameAndPassword(username, password) {
+    const active = true;
+    return UserModel.find({ username, password, active });
   }
 
   function doCreateNewUser(username, password) {
@@ -64,7 +65,8 @@ module.exports = (() => {
           `User with username '${username}' already exists.`
         );
       }
-      return new UserModel({ username, password }).save();
+      const active = false;
+      return new UserModel({ username, password, active }).save();
     });
   }
 

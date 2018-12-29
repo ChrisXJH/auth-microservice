@@ -3,7 +3,7 @@ module.exports = (() => {
   const express = require('express');
   const router = express.Router();
 
-  router.post('/', (req, res) => {
+  router.post('/', logRequest, (req, res) => {
     const { username, password } = req.body;
     UserService.register(username, password)
       .then(newUser => {
@@ -24,6 +24,13 @@ module.exports = (() => {
       status = 400;
     }
     res.status(status).send({ status, message });
+  }
+
+  function logRequest(req, res, next) {
+    const { headers, params, query, body } = req;
+    console.log('Handling incomming http request...');
+    console.log({ headers, params, query, body });
+    next();
   }
 
   return router;

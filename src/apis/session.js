@@ -1,10 +1,9 @@
 module.exports = (() => {
   const express = require('express');
-  const mongoose = require('mongoose');
   const { SessionService, UserService } = require('../services');
   const router = express.Router();
 
-  router.post('/', (req, res) => {
+  router.post('/', logRequest, (req, res) => {
     const { username, password } = req.body;
     SessionService.createUserSession(username, password)
       .then(newSession => {
@@ -14,19 +13,12 @@ module.exports = (() => {
       .catch(err => handleErrorAndRespond(err, res));
   });
 
-  router.get('/:sessionId', (req, res) => {
+  router.get('/:sessionId', logRequest, (req, res) => {
     const { sessionId } = req.params;
     SessionService.getActiveUserSessionById(sessionId)
       .then(session => {
-        if (session) {
-          const { _id } = session;
-          res.send({ _id });
-        } else {
-          const message = `User session with sessionid '${sessionId}' not found.`;
-          const status = 404;
-          console.error(message);
-          res.status(status).send({ status, message });
-        }
+        const { _id } = session;
+        res.send({ _id });
       })
       .catch(err => handleErrorAndRespond(err, res));
   });
@@ -35,12 +27,22 @@ module.exports = (() => {
     let message = err.message;
     console.error(message);
     let status = 500;
-    if (err instanceof UserService.Errors.UserNotFoundError) {
+    if (
+      err instanceof UserService.Errors.UserNotFoundError ||
+      err instanceof SessionService.Errors.InvalidArgumentError
+    ) {
       status = 400;
-    } else if (err instanceof mongoose.Error.CastError) {
-      message = `Invalid sessionId.`;
+    } else if (err instanceof SessionService.Errors.SessionNotFoundError) {
+      status = 404;
     }
     res.status(status).send({ status, message });
+  }
+
+  function logRequest(req, res, next) {
+    const { headers, params, query, body } = req;
+    console.log('Handling incomming http request...');
+    console.log({ headers, params, query, body });
+    next();
   }
 
   return router;

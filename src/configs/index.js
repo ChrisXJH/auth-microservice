@@ -1,4 +1,4 @@
 module.exports = {
   port: 3000,
-  dbUrl: 'mongodb://localhost:27017/auth'
+  dbUrl: 'mongodb://mongo:27017/auth'
 };
